@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<meta property="og:url" content="https://sohyun-l.github.io/frest/">
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="description"
+        content="FREST: Feature RESToration for Semantic Segmentation under Multiple Adverse Conditions">
+  <meta name="keywords" content="Nerfies, D-NeRF, NeRF">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FREST</title>
+
+  <!-- Global site tag (gtag.js) - Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-PYVRSFMDRL"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+
+    function gtag() {
+      dataLayer.push(arguments);
+    }
+
+    gtag('js', new Date());
+
+    gtag('config', 'G-PYVRSFMDRL');
+  </script>
+
+  <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro"
+        rel="stylesheet">
+
+  <link rel="stylesheet" href="./static/css/bulma.min.css">
+  <link rel="stylesheet" href="./static/css/bulma-carousel.min.css">
+  <link rel="stylesheet" href="./static/css/bulma-slider.min.css">
+  <link rel="stylesheet" href="./static/css/fontawesome.all.min.css">
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
+  <link rel="stylesheet" href="./static/css/index.css">
+  <link rel="shortcut icon" href="/lab/favicons/favicon.ico">
+  <link rel="apple-touch-icon" sizes="57x57" href="/lab/favicons/apple-touch-icon-57x57.png">
+  <link rel="apple-touch-icon" sizes="114x114" href="/lab/favicons/apple-touch-icon-114x114.png">
+  <link rel="apple-touch-icon" sizes="72x72" href="/lab/favicons/apple-touch-icon-72x72.png">
+  <link rel="apple-touch-icon" sizes="144x144" href="/lab/favicons/apple-touch-icon-144x144.png">
+  <link rel="apple-touch-icon" sizes="60x60" href="/lab/favicons/apple-touch-icon-60x60.png">
+  <link rel="apple-touch-icon" sizes="120x120" href="/lab/favicons/apple-touch-icon-120x120.png">
+  <link rel="apple-touch-icon" sizes="76x76" href="/lab/favicons/apple-touch-icon-76x76.png">
+  <link rel="apple-touch-icon" sizes="152x152" href="/lab/favicons/apple-touch-icon-152x152.png">
+  <link rel="icon" type="image/png" href="/lab/favicons/favicon-196x196.png" sizes="196x196">
+  <link rel="icon" type="image/png" href="/lab/favicons/favicon-160x160.png" sizes="160x160">
+  <link rel="icon" type="image/png" href="/lab/favicons/favicon-96x96.png" sizes="96x96">
+  <link rel="icon" type="image/png" href="/lab/favicons/favicon-16x16.png" sizes="16x16">
+  <link rel="icon" type="image/png" href="/lab/favicons/favicon-32x32.png" sizes="32x32">
+  <!-- <link rel="icon" href="./static/images/favicon.svg"> -->
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script defer src="./static/js/fontawesome.all.min.js"></script>
+  <script src="./static/js/bulma-carousel.min.js"></script>
+  <script src="./static/js/bulma-slider.min.js"></script>
+  <script src="./static/js/index.js"></script>
+  <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});
+  </script>
+  <script type="text/javascript"
+    src="http://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+  </script>
+</head>
+<body>
+
+<!-- <nav class="navbar" role="navigation" aria-label="main navigation">
+  <div class="navbar-brand">
+    <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false">
+      <span aria-hidden="true"></span>
+      <span aria-hidden="true"></span>
+      <span aria-hidden="true"></span>
+    </a>
+  </div>
+  <div class="navbar-menu">
+    <div class="navbar-start" style="flex-grow: 1; justify-content: center;">
+      <a class="navbar-item" href="https://keunhong.com">
+      <span class="icon">
+          <i class="fas fa-home"></i>
+      </span>
+      </a> -->
+
+      <!-- <div class="navbar-item has-dropdown is-hoverable">
+        <a class="navbar-link">
+          More Research
+        </a>
+        <div class="navbar-dropdown">
+          <a class="navbar-item" href="https://hypernerf.github.io">
+            HyperNeRF
+          </a>
+          <a class="navbar-item" href="https://nerfies.github.io">
+            Nerfies
+          </a>
+          <a class="navbar-item" href="https://latentfusion.github.io">
+            LatentFusion
+          </a>
+          <a class="navbar-item" href="https://photoshape.github.io">
+            PhotoShape
+          </a>
+        </div>
+      </div>
+    </div> -->
+
+  </div>
+</nav>
+
+
+<section class="hero">
+  <div class="hero-body">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered">
+        <div class="column has-text-centered">
+          <h1 class="title is-3 publication-title">FREST: Feature RESToration for Semantic Segmentation<br> 
+            under Multiple Adverse Conditions</h1>
+          <div class="is-size-5 publication-authors">
+            <span class="author-block">
+              <a href="https://sohyun-l.github.io/">Sohyn Kim</a><sup>1</sup>,&ensp;</span>
+            <span class="author-block">
+              <a href="https://southflame.github.io/">Namyup Kim</a><sup>2</sup>,&ensp;</span>
+            <span class="author-block">
+              <a href="http://cvlab.postech.ac.kr/~sungyeon/">Sungyon Kim</a><sup>2</sup>,&ensp;</span>
+            <span class="author-block">
+              <a href="https://suhakwak.github.io/">Suha Kwak</a><sup>1,2</sup></span>
+            
+          </div>
+
+          <div class="is-size-10 publication-authors">
+            <span class="author-block"><sup>1</sup>Graduate School of Artificial Intelligence, POSTECH </span> <br>
+            <span class="author-block"><sup>2</sup>Department of Computer Science and Engineering, POSTECH</span>
+          </div>
+          <!-- <div class="is-size-10 publication-authors">
+            <span class="author-block">* Equal contribution</span>
+          </div> -->
+
+          <div class="column has-text-centered">
+            <div class="publication-links">
+              <!-- PDF Link. -->
+              <span class="link-block">
+                <a href="https://arxiv.org/abs/2308.15512"
+                   class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                      <i class="ai ai-arxiv"></i>
+                  </span>
+                  <span>arXiv</span>
+                </a>
+              </span>
+              <!-- Video Link. -->
+              <!-- <span class="link-block">
+                <a href="https://www.youtube.com/watch?v=MrKrnHhk8IA"
+                   class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                      <i class="fab fa-youtube"></i>
+                  </span>
+                  <span>Video</span>
+                </a>
+              </span> -->
+              <!-- Code Link. -->
+              <span class="link-block">
+                <a href="https://github.com/sohyun-l/frest"
+                   class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                      <i class="fab fa-github"></i>
+                  </span>
+                  <span>Code</span>
+                  </a>
+              </span>
+              <!-- Dataset Link. -->
+              <!-- <span class="link-block">
+                <a href="https://github.com/google/nerfies/releases/tag/0.1"
+                   class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                      <i class="far fa-images"></i>
+                  </span>
+                  <span>Data</span>
+                  </a> -->
+              <span class="link-block">
+                <a href="https://storage.googleapis.com/imagina-prod-secure/uploads/users/files/06e97e718ad8efecdba72d5ab9e7aac13ba36a1b.pdf?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=imagina-cloud-storage%40imagina-1.iam.gserviceaccount.com%2F20230926%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20230926T054355Z&X-Goog-Expires=10800&X-Goog-SignedHeaders=host&X-Goog-Signature=24f4f51f73a398fb1a5c1a8784e1b866953818f5873c796fb1854f75d99f0126d995c76abcf318a8b4037511bc9917ce062795eecd0209b7e2b174d71470a97eea46ae2ea2b24c9bb349c717b7aca4467347f0d0dff78f1cc13688f0e0cfa538240adb9ceb270e80f8817b6f6997e5a6366cac76e45f904c7ca99ebdc735933f6bfb24215c6270f9709ea241be51c80b50596cfccbef960c47870d59da72287944f21c2df0c019341cf20a0b1d4c2c0649366cef593368fb3111bd5b49b248d1235db75af4157a6041cfbb13261c606c32eebdd6c317c049b63b627d4114eeff90ee82792d4a38f74dd78e48097e405870313b41126473ac766d6c51851575c0" class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                    <!-- <i class="fab file-image-o"></i>"> -->
+                    <svg class="svg-inline--fa fa-image fa-w-16" aria-hidden="true" focusable="false" data-prefix="fa" data-icon="image" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" data-fa-i2svg=""><path fill="currentColor" d="M464 448H48c-26.51 0-48-21.49-48-48V112c0-26.51 21.49-48 48-48h416c26.51 0 48 21.49 48 48v288c0 26.51-21.49 48-48 48zM112 120c-30.928 0-56 25.072-56 56s25.072 56 56 56 56-25.072 56-56-25.072-56-56-56zM64 384h384V272l-87.515-87.515c-4.686-4.686-12.284-4.686-16.971 0L208 320l-55.515-55.515c-4.686-4.686-12.284-4.686-16.971 0L64 336v48z"></path></svg><!-- <i class="fa fa-image" aria-hidden="true"></i> Font Awesome fontawesome.com -->
+                    <!-- <i class="fa-sharp fa-light fa-person-chalkboard"></i> -->
+                  </span>
+                  <span>Poster</span>
+                </a>
+              </span>
+              
+              <span class="link-block">
+                <a href="https://southflame.github.io/sag/#bibtex" class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon">
+                      <i class="ai ai-obp"></i>
+                  </span>
+                  <span>BibTex</span>
+                </a>
+              </span>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="hero">
+  <div class="container is-max-desktop">
+    <!-- Abstract. -->
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths">
+        <h2 class="title is-3">Abstract</h2>
+        <div class="content has-text-justified">
+          <p>
+            Robust semantic segmentation under adverse conditions is of
+            great importance in real-world applications. To address this challenging
+            task in practical scenarios where labeled normal condition images are
+            not accessible in training, we propose FREST, a novel feature restora-
+            tion framework for source-free domain adaptation (SFDA) of semantic
+            segmentation to adverse conditions. FREST alternates two steps: (1)
+            learning the condition embedding space that only separates the condi-
+            tion information from the features and (2) restoring features of adverse
+            condition images on the learned condition embedding space. By alternat-
+            ing these two steps, FREST gradually restores features where the effect
+            of adverse conditions is reduced. FREST achieved a state of the art on
+            two public benchmarks (i.e., ACDC and RobotCar) for SFDA to adverse
+            conditions. Moreover, it shows superior generalization ability on unseen
+            datasets.
+          </p>
+          <p>
+            <b>Keywords:</b> semantic segmentation, feature restoration, robustness, source-free domain adaptation
+          </p>
+        </div>
+      </div>
+    </div>
+    <!--/ Abstract. -->
+</section>
+
+<section class="hero">
+  <div class="container is-max-desktop">
+    <div class="hero-body">
+      <img src="./static/images/teaser.jpg"
+                 class="interpolation-image"
+                 alt="Interpolate start reference image."/>
+      <h2 class="subtitle has-text-centered">
+        <!-- Shatter and Gather -->
+      </h2>
+    </div>
+  </div>
+</section>
+
+
+<section class="section">
+  <div class="container is-max-desktop">
+
+    <!-- Overall Architecture. -->
+    <div class="columns is-centered">
+      <div class="column is-full-width">
+        <h2 class="title is-3">Overview of FREST</h2>
+
+        <!-- Interpolating. -->
+        <!-- <h3 class="title is-4">Interpolating states</h3> -->
+        <div class="columns is-vcentered interpolation-panel">
+          <div class="column is-14 has-text-centered">
+            <img src="./static/images/overall.png"/>
+          </div>
+        </div>
+        <div class="content has-text-justified">
+          <p>
+            The overall architecture and training strategy.
+            The segmentation network is pre-trained using a labeled source dataset. 
+            For each iteration, the condition strainer and segmentation network are trained alternatingly. 
+            The frozen modules are shown in gray, the trainable modules are highlighted in red, and “sg” denotes the stop gradient.
+            <b><i>(Step 1)</i></b> The condition strainer and projection head are trained to learn the condition embedding space. 
+            <b><i>(Step 2)</i></b> The segmentation network is trained to restore features from adverse to normal conditions on the condition embedding space. 
+            For evaluation, only the encoder φenc and decoder φdec of the segmentation network are utilized.
+          </p>
+        </div>
+        <!-- <br/> -->
+        <!--/ Interpolating. -->
+
+      </div>
+    </div>
+
+    <!-- Detail. -->
+    <div class="columns is-centered">
+      <div class="column is-full-width">
+        <h2 class="title is-3">Detail of proposed methods</h2>
+
+        <!-- Interpolating. -->
+        <!-- <h3 class="title is-4">Interpolating states</h3> -->
+        <div class="columns is-centered">
+          <div class="column is-full-width">
+            <img src="./static/images/detail.png"/>
+          </div>
+        </div>
+        <div class="content has-text-justified">
+          <p>
+            <b>(a)</b> Detail of positive embedding sampling strategy in the condition-specific learning.
+            <b>(b)</b> Detail of the condition discriminator.
+            <b>(c)</b> Detail of our network computing condition-infused feature.
+            The condition strainers are connected to the original feed-forward layer (FFN) and multi-head selfattention layer (MHSA) through the residual connections.
+          </p>
+        </div>
+        <!-- <br/> -->
+        <!--/ Interpolating. -->
+
+      </div>
+    </div>
+
+
+    
+    <!--/ Experimental Results. -->
+    <div class="columns is-centered">
+      <div class="column is-full-width">
+        <h2 class="title is-3">Experimental Results</h2>
+      </div>
+    </div>
+
+    <div class="columns is-centered">
+      <div class="column is-full-width">
+        <h3 class="title is-4">Comparison with previous methods</h3>
+        <img src="./static/images/table1.png"
+                 class="interpolation-image"
+                 alt="Interpolate start reference image."/>
+        <p>
+        Comparison with existing methods on Cityscapes → ACDC. The results are reported in mIoU (%) on the ACDC test set.
+        </p>
+      </div>
+    </div>
+
+    <div class="columns is-centered">
+      <div class="column is-full-width">
+        <img src="./static/images/table2.png"
+                 class="interpolation-image"
+                 alt="Interpolate start reference image."/>
+        <p>
+          <b>(a)</b> Comparison with previous methods on City → RobotCar.
+          <b>(b)</b> Comparison with UDA methods on City → ACDC. (<i>SF</i>: source-free method). 
+          <b>(c)</b> Generalization performance of models adapted from Cityscapes to ACDC on ACG and Cityscapes-lindau40.
+        </p>
+      </div>
+    </div>
+
+    <div class="columns is-centered">
+      <div class="column is-full-width">
+        <h3 class="title is-4">Ablation Study</h3>
+        <img src="./static/images/table3.png"
+                 class="interpolation-image"
+                 alt="Interpolate start reference image."/>
+        <p>
+           Loss analysis on <b>(a)</b> Step 1 and <b>(b)</b> Step 2 on ACDC val set.
+          <b>(c)</b> Analysis of the structure and training strategy in FREST on ACDC val set.
+        </p>
+      </div>
+    </div>
+
+    <div class="columns is-centered">
+      <div class="column is-full-width">
+        <h3 class="title is-4">In-depth Analysis</h3>
+        <img src="./static/images/table4.png"
+                 class="interpolation-image"
+                 alt="Interpolate start reference image."/>
+        <p>
+          <b>(a)</b> Performance according to positive embedding selection strategies and loss functions. <i>Cls</i>. and <i>Contra</i>. denote classification and contrastive loss. 
+          <b>(b)</b> The number of parameters for additional modules.
+          <b>(c)</b> Impact of restored features.
+        </p>
+      </div>
+    </div>
+    
+    
+    <div class="columns is-centered">
+      <div class="column is-full-width">
+        <h3 class="title is-4">Empirical Justification</h3>
+        <img src="./static/images/emp_just1.png"
+                 class="interpolation-image"
+                 alt="Interpolate start reference image."/>
+        <p>
+          Image reconstruction results from segmentation features. <b>(a)</b> Input target image. Image reconstructed by the <b>(b)</b> Baseline and <b>(c)</b> FREST. <b>(d)</b> Reference image.
+          <b>(b)</b> The number of parameters for additional modules.
+          <b>(c)</b> Impact of restored features.
+        </p>
+      </div>
+    </div>
+
+    <div class="columns is-centered">
+      <div class="column is-full-width">
+        <img src="./static/images/emp_just2.png"
+                 class="interpolation-image"
+                 alt="Interpolate start reference image."/>
+        <p>
+          Empirical analysis on the impact of feature restoration during training FREST.
+          <b>(a)</b> Inter-domain shift between adverse and normal conditions. 
+          <b>(b)</b> Intra-domain shift within each condition. 
+          <b>(c)</b> Convergence in total losses for both Step 1 and Step 2.
+        </p>
+      </div>
+    </div>
+
+
+    <div class="columns is-centered">
+      <div class="column is-full-width">
+        <h3 class="title is-4">Qualitative Results</h3>
+        <img src="./static/images/qual1.png"
+                 class="interpolation-image"
+                 alt="Interpolate start reference image."/>
+        <p>
+          Qualitative results of FREST (Ours), its baseline (SegFormer), and CMA on ACDC and RobotCar.
+        </p>
+      </div>
+    </div>
+    
+
+<section class="section" id="BibTeX">
+  <div class="container is-max-desktop content">
+    <h2 class="title"><a id="bibtex">BibTeX</a></h2>
+    <pre><code>@inproceedings{lee2024frest,
+      title={FREST: Feature RESToration for Semantic Segmentation under Multiple Adverse Conditions},
+      author={Lee, Sohyun and Kim, Namyup and Kim, Sungyeon and Kwak, Suha},
+      journal={European Conference on Computer Vision},
+      year={2024},
+}</code></pre>
+  </div>
+</section>
+
+
+<footer class="footer">
+  <div class="columns is-centered">
+    <div class="column is-8">
+      <div class="content">
+        <p>
+          This website is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative
+          Commons Attribution-ShareAlike 4.0 International License</a>.
+        </p>
+        <p>
+          Website adapted from the following <a href="https://github.com/nerfies/nerfies.github.io">source code</a>.
+        </p>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
