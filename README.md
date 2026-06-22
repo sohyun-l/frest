@@ -1,3 +1,101 @@
-# FREST: Feature RESToration for Semantic Segmentation under Multiple Adverse Conditions Project Page
+# FREST: Feature RESToration for Semantic Segmentation under Multiple Adverse Conditions
 
-This repository contains additonal results and website source files for [FREST Project](https://sohyun-l.github.io/frest/).
+Official implementation of **FREST** (ECCV 2024), a source-free domain adaptation
+(SFDA) framework for semantic segmentation under adverse conditions. FREST
+alternates two steps: (1) learning a **condition embedding space** that isolates
+condition-specific information, and (2) **restoring** features of adverse-condition
+images toward the normal condition on that space. This repository covers the main
+**Cityscapes → ACDC** setting.
+
+Project page: https://sohyun-l.github.io/frest
+
+## Method overview
+
+| Paper component | Where in the code |
+| --- | --- |
+| Condition strainer `psi_strainer` (Fig. 3) | `models/backbones/strainer.py` (`ConditionStrainer`), attached per stage in `models/backbones/mix_transformer_strainer.py` |
+| Projection onto the condition embedding space `psi_proj` | `models/heads/projection.py` (`ProjectionHead`) + `models/backbones/condition_projector.py` (`ConditionProjector`) |
+| Condition-specific loss `L_spec` (Eq. 1–2) | sampling in `models/losses.py` (`ConditionContrastiveSampler`), contrastive term in `FREST.training_step` (Step 1) |
+| Feature restoration loss `L_resto` (Eq. 3) | `restoration_loss` in `FREST.training_step` (Step 2) |
+| Adverse-condition discriminating loss `L_dis` (Eq. 4) | `discriminate=True` path in the backbone; `discriminating_loss` in `FREST.training_step` |
+| Self-training `L_self` (CBST) + entropy `L_ent` | `helpers/pseudo_labels.py`, `models/losses.py` (`NormalizedEntropyLoss`) |
+| Restored features used at inference (encoder + decoder only) | `inference=True` path in the backbone (the strainer is skipped) |
+
+The two steps are alternated every iteration; only the encoder and decoder are
+used for evaluation.
+
+## Setup
+
+```bash
+conda create -n frest python=3.8 -y && conda activate frest
+pip install -r requirements.txt
+```
+
+A CUDA toolchain is required: the optical-flow correlation op
+(`models/correlation_ops`) is JIT-compiled on first use (needs `nvcc` + `ninja`).
+
+## Data and weights
+
+Set `DATA_DIR` to a folder laid out as:
+
+```
+$DATA_DIR/
+  ACDC/                 # rgb_anon/, gt/  (https://acdc.vision.ee.ethz.ch/)
+  pseudo_labels/
+    pseudo_labels_train_ACDC_cma_segformer/   # auto-downloaded on first run
+```
+
+- **Source model**: place the Cityscapes-pretrained SegFormer-B5 at
+  `./pretrained_models/segformer.b5.1024x1024.city.160k.pth`
+  (official SegFormer weights).
+- **Alignment**: training warps the reference images with UAWarpC; the
+  `megadepth` weights are fetched by `models/heads/uawarpc.py`. They are not
+  needed for evaluation.
+
+## Train
+
+```bash
+DATA_DIR=/path/to/data bash scripts/train_acdc.sh
+```
+
+## Evaluate
+
+```bash
+DATA_DIR=/path/to/data bash scripts/eval_acdc.sh checkpoints/frest_acdc.ckpt
+```
+
+## Pretrained checkpoint
+
+Download the FREST checkpoint and place it at `checkpoints/frest_acdc.ckpt`:
+
+- **Checkpoint (Cityscapes → ACDC):** [download link]( )
+
+If you instead have a checkpoint from the original training code (legacy module
+names), convert its keys to this release's layout with:
+
+```bash
+python convert_checkpoint.py SRC.ckpt checkpoints/frest_acdc.ckpt
+```
+
+## Results (Cityscapes → ACDC, mIoU %)
+
+| Split | mIoU |
+| --- | --- |
+| ACDC val (multi-scale + flip) | 68.6 |
+| ACDC test | 70.7 |
+
+## Citation
+
+```bibtex
+@inproceedings{lee2024frest,
+  title     = {FREST: Feature RESToration for Semantic Segmentation under Multiple Adverse Conditions},
+  author    = {Lee, Sohyun and Kim, Namyup and Kim, Sungyeon and Kwak, Suha},
+  booktitle = {European Conference on Computer Vision (ECCV)},
+  year      = {2024}
+}
+```
+
+## Acknowledgements
+
+The codebase builds on [Refign/CMA](https://github.com/brdav/cma) and
+[SegFormer](https://github.com/NVlabs/SegFormer).
