@@ -54,14 +54,14 @@ model:
   class_path: models.FREST
   init_args:
     entropy_loss_weight: 0.01
-    contrastive_loss_weight: 0.01
-    discriminator_weight: 0.01
+    contrastive_loss_weight: 0.001
+    discriminator_weight: 0.00005
     freeze_decoder: True
     projection_head_lr_factor: 10.0
     epoch_search: 1
     head_lr_factor: 1
     projector_lr: 0.001
-    grad_clip: 0
+    grad_clip: 50000
     use_seg: True
     ema_momentum: 0.9999
     backbone:
