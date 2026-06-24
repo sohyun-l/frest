@@ -77,13 +77,6 @@ names), convert its keys to this release's layout with:
 python convert_checkpoint.py SRC.ckpt checkpoints/frest_acdc.ckpt
 ```
 
-## Results (Cityscapes → ACDC, mIoU %)
-
-| Split | mIoU |
-| --- | --- |
-| ACDC val (multi-scale + flip) | 68.6 |
-| ACDC test | 70.7 |
-
 ## Citation
 
 ```bibtex
