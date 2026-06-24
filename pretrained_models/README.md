@@ -23,5 +23,12 @@ MegaDepth-pretrained weights here:
 pretrained_models/uawarpc_megadepth.ckpt
 ```
 
-Available from the Refign/CMA release: https://github.com/brdav/cma
+Download: https://drive.google.com/file/d/1qMngnVPUroFOYpBvwlxNCWpjtr3bNBfD/view?usp=sharing
+
+Or via gdown:
+
+```
+gdown 1qMngnVPUroFOYpBvwlxNCWpjtr3bNBfD -O pretrained_models/uawarpc_megadepth.ckpt
+```
+
 (These are only needed for training; evaluation does not use them.)
