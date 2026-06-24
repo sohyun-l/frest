@@ -1,0 +1,11 @@
+torch==2.0.1
+torchvision==0.15.2
+pytorch-lightning==1.9.5
+torchmetrics==0.11.4
+jsonargparse[signatures]==4.20.1
+numpy==1.24.4
+Pillow
+tqdm
+requests
+ninja
+scipy

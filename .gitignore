@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+*.so
+*.o
+outputs/
+wandb/
+# large binaries — distribute separately (see README)
+pretrained_models/*.pth
+pretrained_models/*.ckpt
+checkpoints/*.ckpt
+# local verification scaffolding (not part of the release)
+_*
+*.log
+configs/_*.yaml
