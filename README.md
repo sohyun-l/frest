@@ -73,7 +73,7 @@ DATA_DIR=/path/to/data bash scripts/eval_acdc.sh checkpoints/frest_acdc.ckpt
 
 Download the FREST checkpoint and place it at `checkpoints/frest_acdc.ckpt`:
 
-- **Checkpoint (Cityscapes → ACDC):** [download link]( )
+- **Checkpoint (Cityscapes → ACDC):** [download link](https://drive.google.com/file/d/1UlBXN5LLLKLsj51kq8DxHt5lzXw4x96k/view?usp=sharing)
 
 If you instead have a checkpoint from the original training code (legacy module
 names), convert its keys to this release's layout with:
