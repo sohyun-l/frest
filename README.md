@@ -1,13 +1,17 @@
 # FREST: Feature RESToration for Semantic Segmentation under Multiple Adverse Conditions
 
-Official implementation of **FREST** (ECCV 2024), a source-free domain adaptation
-(SFDA) framework for semantic segmentation under adverse conditions. FREST
-alternates two steps: (1) learning a **condition embedding space** that isolates
-condition-specific information, and (2) **restoring** features of adverse-condition
-images toward the normal condition on that space. This repository covers the main
-**Cityscapes → ACDC** setting.
+**[ECCV 2024] Official PyTorch implementation of FREST.**
 
-Project page: https://sohyun-l.github.io/frest
+[![arXiv](https://img.shields.io/badge/arXiv-2407.13437-b31b1b.svg)](https://arxiv.org/abs/2407.13437)
+[![Project Page](https://img.shields.io/badge/Project-Page-1f72b1.svg)](https://sohyun-l.github.io/frest)
+[![Conference](https://img.shields.io/badge/ECCV-2024-6f42c1.svg)](https://eccv.ecva.net/Conferences/2024)
+
+FREST is a source-free domain adaptation (SFDA) framework for semantic
+segmentation under adverse conditions. It alternates two steps: (1) learning a
+**condition embedding space** that isolates condition-specific information, and
+(2) **restoring** features of adverse-condition images toward the normal
+condition on that space. This repository covers the main **Cityscapes → ACDC**
+setting.
 
 ## Method overview
 
