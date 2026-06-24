@@ -187,7 +187,6 @@ class Block(nn.Module):
                  sr_ratio=1):
         super().__init__()
         self.norm1 = norm_layer(dim)
-        # self.norm1_adapter = norm_layer(dim)
         self.attn = Attention(
             dim,
             num_heads=num_heads,
@@ -201,7 +200,6 @@ class Block(nn.Module):
         self.drop_path = DropPath(
             drop_path) if drop_path > 0. else nn.Identity()
         self.norm2 = norm_layer(dim)
-        # self.norm2_adapter = norm_layer(dim)
         mlp_hidden_dim = int(dim * mlp_ratio)
         self.mlp = Mlp(
             in_features=dim,
@@ -209,12 +207,10 @@ class Block(nn.Module):
             act_layer=act_layer,
             drop=drop)
         
-        # self.mlp_adapter = Mlp(
         #     in_features=dim,
         #     hidden_features=mlp_hidden_dim,
         #     act_layer=act_layer,
         #     drop=drop)
-        # self.attn_adapter = Attention(
         #     dim,
         #     num_heads=num_heads,
         #     qkv_bias=qkv_bias,
@@ -222,11 +218,7 @@ class Block(nn.Module):
         #     attn_drop=attn_drop,
         #     proj_drop=drop,
         #     sr_ratio=sr_ratio)
-        # self.ls1 = LayerScale(dim, init_values=1e-5) 
-        # self.ls2 = LayerScale(dim, init_values=1e-5)
-        # self.drop_path_adapter1 = DropPath(
         #     drop_path) if drop_path > 0. else nn.Identity()
-        # self.drop_path_adapter2 = DropPath(
         #     drop_path) if drop_path > 0. else nn.Identity()          
 
     def forward(self, x, H, W):
@@ -236,7 +228,6 @@ class Block(nn.Module):
         return x
 
     def forward_attn(self, x, H, W):
-        # import pdb; pdb.set_trace()
         x = x + self.drop_path(self.attn(self.norm1(x), H, W))
         return x
     
@@ -405,10 +396,6 @@ class MixVisionTransformerStrainer(nn.Module):
         self.u_init = u_init
         self.gate_init = gate_init
         
-        # self.block1_club = CLUB(x_dim=64, y_dim=64, hidden_size=16).cuda()
-        # self.block2_club = CLUB(x_dim=128, y_dim=128, hidden_size=32).cuda()
-        # self.block3_club = CLUB(x_dim=320, y_dim=320, hidden_size=64).cuda()
-        # self.block4_club = CLUB(x_dim=512, y_dim=512, hidden_size=128).cuda()
         
         #Classifier between features (size 64*25)
         self.classifier_block1_attn = nn.Sequential(
@@ -521,7 +508,6 @@ class MixVisionTransformerStrainer(nn.Module):
                 sr_ratio=sr_ratios[0]) for i in range(depths[0])
         ])
         self.norm1 = norm_layer(embed_dims[0])
-        # self.norm1_adapter = norm_layer(embed_dims[0])
 
         cur += depths[0]
         self.block2 = nn.ModuleList([
@@ -538,7 +524,6 @@ class MixVisionTransformerStrainer(nn.Module):
                 sr_ratio=sr_ratios[1]) for i in range(depths[1])
         ])
         self.norm2 = norm_layer(embed_dims[1])
-        # self.norm2_adapter = norm_layer(embed_dims[1])
 
         cur += depths[1]
         self.block3 = nn.ModuleList([
@@ -594,7 +579,6 @@ class MixVisionTransformerStrainer(nn.Module):
             for m in self.modules():
                 self._init_weights(m)
         else:
-            # import pdb; pdb.set_trace()
             if pretrained == 'imagenet':
                 pretrained = model_urls['imagenet'][self.model_type]
             elif pretrained == 'cityscapes':
@@ -622,7 +606,6 @@ class MixVisionTransformerStrainer(nn.Module):
                 state_dict = new_state_dict
             state_dict = {k: v for k, v in state_dict.items()
                           if not k.startswith('head.')}
-            # self.load_state_dict(state_dict, strict=True)
             self.load_state_dict(state_dict, strict=False)
 
     def reset_drop_path(self, drop_path_rate):
@@ -659,14 +642,9 @@ class MixVisionTransformerStrainer(nn.Module):
         B = x.shape[0]
         outs = []
         total_loss = torch.tensor(0.0).cuda()
-        # seg_outs_attn = []
-        # adapter_outs_attn = []
-        # seg_outs_ffn = []
-        # adapter_outs_ffn = []
         labels_attn_x = torch.ones(1, dtype=torch.long).cuda()  # Let's assume 1 label represents down_attn_x
-        labels_adapter_x = torch.zeros(1, dtype=torch.long).cuda()  # Let's assume 0 label represents down_adapter_x
+        labels_infused_x = torch.zeros(1, dtype=torch.long).cuda()  # Let's assume 0 label represents down_infused_x
         labels_ffn_x = torch.ones(1, dtype=torch.long).cuda()  # Let's assume 1 label represents down_ffn_x
-        # import pdb; pdb.set_trace()
         # stage 1
         x, H, W = self.patch_embed1(x)
         for i, blk in enumerate(self.block1):
@@ -681,34 +659,32 @@ class MixVisionTransformerStrainer(nn.Module):
                             attn_x = blk.forward_attn(x, H, W)
                             attn_x_reshape = attn_x.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
                             down_attn_x = nn.functional.adaptive_avg_pool2d(attn_x_reshape, 7).permute(0, 2, 3, 1).contiguous().view(1,-1)
-                            x_attn_adapter = attn_x + self.strainer1(self.norm1(x), l=i, f=0)
-                            adapter_attn_x_reshape = x_attn_adapter.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
-                            # import pdb; pdb.set_trace()
-                            down_adapter_x = nn.functional.adaptive_avg_pool2d(adapter_attn_x_reshape, 7).permute(0, 2, 3, 1).contiguous().view(1,-1)
+                            x_attn_infused = attn_x + self.strainer1(self.norm1(x), l=i, f=0)
+                            infused_attn_x_reshape = x_attn_infused.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
+                            down_infused_x = nn.functional.adaptive_avg_pool2d(infused_attn_x_reshape, 7).permute(0, 2, 3, 1).contiguous().view(1,-1)
                             
-                            # import pdb; pdb.set_trace()
                             pred_attn_x = self.classifier_block1_attn(down_attn_x)
-                            pred_adapter_x = self.classifier_block1_attn(down_adapter_x)
+                            pred_infused_x = self.classifier_block1_attn(down_infused_x)
                             loss_attn_x = torch.nn.functional.cross_entropy(pred_attn_x, labels_attn_x)
-                            loss_adapter_x = torch.nn.functional.cross_entropy(pred_adapter_x, labels_adapter_x)
+                            loss_infused_x = torch.nn.functional.cross_entropy(pred_infused_x, labels_infused_x)
 
-                            total_loss += loss_attn_x + loss_adapter_x
+                            total_loss += loss_attn_x + loss_infused_x
 
                             ffn_x_save = blk.forward_ffn(attn_x, H, W)
                             ffn_x_reshape = ffn_x_save.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
                             down_ffn_x = nn.functional.adaptive_avg_pool2d(ffn_x_reshape, 7).permute(0, 2, 3, 1).contiguous().view(1,-1)
                             
-                            x_ffn_adapter = ffn_x_save + self.strainer1(self.norm1(attn_x), l=i, f=1)
+                            x_ffn_infused = ffn_x_save + self.strainer1(self.norm1(attn_x), l=i, f=1)
                             
-                            adapter_ffn_x_reshape = x_ffn_adapter.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
-                            down_adapter_ffn_x = nn.functional.adaptive_avg_pool2d(adapter_ffn_x_reshape, 7).permute(0, 2, 3, 1).contiguous().view(1,-1)
+                            infused_ffn_x_reshape = x_ffn_infused.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
+                            down_infused_ffn_x = nn.functional.adaptive_avg_pool2d(infused_ffn_x_reshape, 7).permute(0, 2, 3, 1).contiguous().view(1,-1)
 
                             pred_ffn_x = self.classifier_block1_ffn(down_ffn_x)
-                            pred_adapter_x = self.classifier_block1_ffn(down_adapter_ffn_x)
+                            pred_infused_x = self.classifier_block1_ffn(down_infused_ffn_x)
                             loss_ffn_x = torch.nn.functional.cross_entropy(pred_ffn_x, labels_ffn_x)
-                            loss_adapter_x = torch.nn.functional.cross_entropy(pred_adapter_x, labels_adapter_x)
+                            loss_infused_x = torch.nn.functional.cross_entropy(pred_infused_x, labels_infused_x)
 
-                            total_loss += loss_ffn_x + loss_adapter_x
+                            total_loss += loss_ffn_x + loss_infused_x
                             x = ffn_x_save
 
                         elif discriminate == False:
@@ -733,43 +709,38 @@ class MixVisionTransformerStrainer(nn.Module):
                 if self.strainer2 is None:
                     x = blk(x, H, W)
                 else:               
-                    # x = blk(self.strainer2(self.norm2(x), l=i+3, f=0), H, W)
-                    # x = x + blk.forward_attn(self.strainer2(self.norm2(x), l=i, f=0), H, W)
-                    # x = x + blk.forward_ffn(self.strainer2(self.norm2(x), l=i, f=1), H, W)
                     
                     if inference == False:
                         if discriminate == True:
                             attn_x = blk.forward_attn(x, H, W)
                             attn_x_reshape = attn_x.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
                             down_attn_x = nn.functional.adaptive_avg_pool2d(attn_x_reshape, 7).permute(0, 2, 3, 1).contiguous().view(1,-1)
-                            x_attn_adapter = attn_x + self.strainer2(self.norm2(x), l=i, f=0)
-                            adapter_attn_x_reshape = x_attn_adapter.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
-                            # import pdb; pdb.set_trace()
-                            down_adapter_x = nn.functional.adaptive_avg_pool2d(adapter_attn_x_reshape, 7).permute(0, 2, 3, 1).contiguous().view(1,-1)
+                            x_attn_infused = attn_x + self.strainer2(self.norm2(x), l=i, f=0)
+                            infused_attn_x_reshape = x_attn_infused.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
+                            down_infused_x = nn.functional.adaptive_avg_pool2d(infused_attn_x_reshape, 7).permute(0, 2, 3, 1).contiguous().view(1,-1)
                             
-                            # import pdb; pdb.set_trace()
                             pred_attn_x = self.classifier_block2_attn(down_attn_x)
-                            pred_adapter_x = self.classifier_block2_attn(down_adapter_x)
+                            pred_infused_x = self.classifier_block2_attn(down_infused_x)
                             loss_attn_x = torch.nn.functional.cross_entropy(pred_attn_x, labels_attn_x)
-                            loss_adapter_x = torch.nn.functional.cross_entropy(pred_adapter_x, labels_adapter_x)
+                            loss_infused_x = torch.nn.functional.cross_entropy(pred_infused_x, labels_infused_x)
 
-                            total_loss += loss_attn_x + loss_adapter_x
+                            total_loss += loss_attn_x + loss_infused_x
 
                             ffn_x_save = blk.forward_ffn(attn_x, H, W)
                             ffn_x_reshape = ffn_x_save.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
                             down_ffn_x = nn.functional.adaptive_avg_pool2d(ffn_x_reshape, 7).permute(0, 2, 3, 1).contiguous().view(1,-1)
                             
-                            x_ffn_adapter = ffn_x_save + self.strainer2(self.norm2(attn_x), l=i, f=1)
+                            x_ffn_infused = ffn_x_save + self.strainer2(self.norm2(attn_x), l=i, f=1)
                             
-                            adapter_ffn_x_reshape = x_ffn_adapter.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
-                            down_adapter_ffn_x = nn.functional.adaptive_avg_pool2d(adapter_ffn_x_reshape, 7).permute(0, 2, 3, 1).contiguous().view(1,-1)
+                            infused_ffn_x_reshape = x_ffn_infused.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
+                            down_infused_ffn_x = nn.functional.adaptive_avg_pool2d(infused_ffn_x_reshape, 7).permute(0, 2, 3, 1).contiguous().view(1,-1)
 
                             pred_ffn_x = self.classifier_block2_ffn(down_ffn_x)
-                            pred_adapter_x = self.classifier_block2_ffn(down_adapter_ffn_x)
+                            pred_infused_x = self.classifier_block2_ffn(down_infused_ffn_x)
                             loss_ffn_x = torch.nn.functional.cross_entropy(pred_ffn_x, labels_ffn_x)
-                            loss_adapter_x = torch.nn.functional.cross_entropy(pred_adapter_x, labels_adapter_x)
+                            loss_infused_x = torch.nn.functional.cross_entropy(pred_infused_x, labels_infused_x)
 
-                            total_loss += loss_ffn_x + loss_adapter_x
+                            total_loss += loss_ffn_x + loss_infused_x
                             x = ffn_x_save
 
                         elif discriminate == False:
@@ -803,34 +774,32 @@ class MixVisionTransformerStrainer(nn.Module):
                             attn_x = blk.forward_attn(x, H, W)
                             attn_x_reshape = attn_x.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
                             down_attn_x = nn.functional.adaptive_avg_pool2d(attn_x_reshape, 7).permute(0, 2, 3, 1).contiguous().view(1,-1)
-                            x_attn_adapter = attn_x + self.strainer3(self.norm3(x), l=i, f=0)
-                            adapter_attn_x_reshape = x_attn_adapter.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
-                            # import pdb; pdb.set_trace()
-                            down_adapter_x = nn.functional.adaptive_avg_pool2d(adapter_attn_x_reshape, 7).permute(0, 2, 3, 1).contiguous().view(1,-1)
+                            x_attn_infused = attn_x + self.strainer3(self.norm3(x), l=i, f=0)
+                            infused_attn_x_reshape = x_attn_infused.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
+                            down_infused_x = nn.functional.adaptive_avg_pool2d(infused_attn_x_reshape, 7).permute(0, 2, 3, 1).contiguous().view(1,-1)
                             
-                            # import pdb; pdb.set_trace()
                             pred_attn_x = self.classifier_block3_attn(down_attn_x)
-                            pred_adapter_x = self.classifier_block3_attn(down_adapter_x)
+                            pred_infused_x = self.classifier_block3_attn(down_infused_x)
                             loss_attn_x = torch.nn.functional.cross_entropy(pred_attn_x, labels_attn_x)
-                            loss_adapter_x = torch.nn.functional.cross_entropy(pred_adapter_x, labels_adapter_x)
+                            loss_infused_x = torch.nn.functional.cross_entropy(pred_infused_x, labels_infused_x)
 
-                            total_loss += loss_attn_x + loss_adapter_x
+                            total_loss += loss_attn_x + loss_infused_x
 
                             ffn_x_save = blk.forward_ffn(attn_x, H, W)
                             ffn_x_reshape = ffn_x_save.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
                             down_ffn_x = nn.functional.adaptive_avg_pool2d(ffn_x_reshape, 7).permute(0, 2, 3, 1).contiguous().view(1,-1)
                             
-                            x_ffn_adapter = ffn_x_save + self.strainer3(self.norm3(attn_x), l=i, f=1)
+                            x_ffn_infused = ffn_x_save + self.strainer3(self.norm3(attn_x), l=i, f=1)
                             
-                            adapter_ffn_x_reshape = x_ffn_adapter.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
-                            down_adapter_ffn_x = nn.functional.adaptive_avg_pool2d(adapter_ffn_x_reshape, 7).permute(0, 2, 3, 1).contiguous().view(1,-1)
+                            infused_ffn_x_reshape = x_ffn_infused.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
+                            down_infused_ffn_x = nn.functional.adaptive_avg_pool2d(infused_ffn_x_reshape, 7).permute(0, 2, 3, 1).contiguous().view(1,-1)
 
                             pred_ffn_x = self.classifier_block3_ffn(down_ffn_x)
-                            pred_adapter_x = self.classifier_block3_ffn(down_adapter_ffn_x)
+                            pred_infused_x = self.classifier_block3_ffn(down_infused_ffn_x)
                             loss_ffn_x = torch.nn.functional.cross_entropy(pred_ffn_x, labels_ffn_x)
-                            loss_adapter_x = torch.nn.functional.cross_entropy(pred_adapter_x, labels_adapter_x)
+                            loss_infused_x = torch.nn.functional.cross_entropy(pred_infused_x, labels_infused_x)
 
-                            total_loss += loss_ffn_x + loss_adapter_x
+                            total_loss += loss_ffn_x + loss_infused_x
                             x = ffn_x_save
 
                         elif discriminate == False:
@@ -854,9 +823,6 @@ class MixVisionTransformerStrainer(nn.Module):
                 if self.strainer4 is None:
                     x = blk(x, H, W)
                 else:       
-                    # x = blk(self.strainer4(self.norm4(x), l=i+49, f=0), H, W)
-                    # x = x + blk.forward_attn(self.strainer4(self.norm4(x), l=i, f=0), H, W)
-                    # x = x + blk.forward_ffn(self.strainer4(self.norm4(x), l=i, f=1), H, W)
                     attn_x = blk.forward_attn(x, H, W)
                     
                     if inference == False:
@@ -864,34 +830,32 @@ class MixVisionTransformerStrainer(nn.Module):
                             attn_x = blk.forward_attn(x, H, W)
                             attn_x_reshape = attn_x.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
                             down_attn_x = nn.functional.adaptive_avg_pool2d(attn_x_reshape, 7).permute(0, 2, 3, 1).contiguous().view(1,-1)
-                            x_attn_adapter = attn_x + self.strainer4(self.norm4(x), l=i, f=0)
-                            adapter_attn_x_reshape = x_attn_adapter.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
-                            # import pdb; pdb.set_trace()
-                            down_adapter_x = nn.functional.adaptive_avg_pool2d(adapter_attn_x_reshape, 7).permute(0, 2, 3, 1).contiguous().view(1,-1)
+                            x_attn_infused = attn_x + self.strainer4(self.norm4(x), l=i, f=0)
+                            infused_attn_x_reshape = x_attn_infused.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
+                            down_infused_x = nn.functional.adaptive_avg_pool2d(infused_attn_x_reshape, 7).permute(0, 2, 3, 1).contiguous().view(1,-1)
                             
-                            # import pdb; pdb.set_trace()
                             pred_attn_x = self.classifier_block4_attn(down_attn_x)
-                            pred_adapter_x = self.classifier_block4_attn(down_adapter_x)
+                            pred_infused_x = self.classifier_block4_attn(down_infused_x)
                             loss_attn_x = torch.nn.functional.cross_entropy(pred_attn_x, labels_attn_x)
-                            loss_adapter_x = torch.nn.functional.cross_entropy(pred_adapter_x, labels_adapter_x)
+                            loss_infused_x = torch.nn.functional.cross_entropy(pred_infused_x, labels_infused_x)
 
-                            total_loss += loss_attn_x + loss_adapter_x
+                            total_loss += loss_attn_x + loss_infused_x
 
                             ffn_x_save = blk.forward_ffn(attn_x, H, W)
                             ffn_x_reshape = ffn_x_save.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
                             down_ffn_x = nn.functional.adaptive_avg_pool2d(ffn_x_reshape, 7).permute(0, 2, 3, 1).contiguous().view(1,-1)
                             
-                            x_ffn_adapter = ffn_x_save + self.strainer4(self.norm4(attn_x), l=i, f=1)
+                            x_ffn_infused = ffn_x_save + self.strainer4(self.norm4(attn_x), l=i, f=1)
                             
-                            adapter_ffn_x_reshape = x_ffn_adapter.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
-                            down_adapter_ffn_x = nn.functional.adaptive_avg_pool2d(adapter_ffn_x_reshape, 7).permute(0, 2, 3, 1).contiguous().view(1,-1)
+                            infused_ffn_x_reshape = x_ffn_infused.reshape(B, H, W, -1).permute(0, 3, 1, 2).contiguous()
+                            down_infused_ffn_x = nn.functional.adaptive_avg_pool2d(infused_ffn_x_reshape, 7).permute(0, 2, 3, 1).contiguous().view(1,-1)
 
                             pred_ffn_x = self.classifier_block4_ffn(down_ffn_x)
-                            pred_adapter_x = self.classifier_block4_ffn(down_adapter_ffn_x)
+                            pred_infused_x = self.classifier_block4_ffn(down_infused_ffn_x)
                             loss_ffn_x = torch.nn.functional.cross_entropy(pred_ffn_x, labels_ffn_x)
-                            loss_adapter_x = torch.nn.functional.cross_entropy(pred_adapter_x, labels_adapter_x)
+                            loss_infused_x = torch.nn.functional.cross_entropy(pred_infused_x, labels_infused_x)
 
-                            total_loss += loss_ffn_x + loss_adapter_x
+                            total_loss += loss_ffn_x + loss_infused_x
                             x = ffn_x_save
 
                         elif discriminate == False:
@@ -912,7 +876,6 @@ class MixVisionTransformerStrainer(nn.Module):
 
     def forward(self, x, img='trg', discriminate=False, inference=False):
         x = self.forward_features(x, img, discriminate, inference)
-        # x = self.head(x)
 
         return x
     
@@ -965,7 +928,6 @@ class CLUB(nn.Module):  # CLUB: Mutual Information Contrastive Learning Upper Bo
                                        nn.ReLU(),
                                        nn.Linear(hidden_size//2, y_dim),
                                        nn.Tanh())
-        # self.downsample = nn.Sequential(nn.Linear(x_dim, 128),
         #                                nn.ReLU(),
         #                                nn.Linear(128, 32))
 

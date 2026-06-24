@@ -22,6 +22,19 @@ from torch.backends import cudnn
 
 
 class FREST(pl.LightningModule):
+    """Feature RESToration for source-free adaptation to adverse conditions.
+
+    Each iteration alternates two steps (Sec. 4):
+      Step 1 - learn the condition embedding space: train the condition strainer
+        (psi_strainer) and projection head (psi_proj) with the condition-specific
+        loss L_spec (Eq. 1-2) and the self-training loss L_self.
+      Step 2 - feature restoration: train the segmentation network with the
+        feature restoration loss L_resto (Eq. 3), the adverse condition
+        discriminating loss L_dis (Eq. 4), L_self and the entropy loss L_ent.
+    Only the encoder (phi_enc) and decoder (phi_dec) are used at inference; the
+    strainer is skipped so the model runs on the restored features f_adv.
+    """
+
     def __init__(self,
                  optimizer_init: dict,
                  lr_scheduler_init: dict,
@@ -136,10 +149,10 @@ class FREST(pl.LightningModule):
         # LOSSES
         #
         loss = torch.tensor(0.0, device=self.device)
-        seg_loss = torch.tensor(0.0, device=self.device)
-        entropy_val = torch.tensor(0.0, device=self.device)
+        self_training_loss_val = torch.tensor(0.0, device=self.device)
+        entropy_loss_val = torch.tensor(0.0, device=self.device)
         restoration_loss = torch.tensor(0.0, device=self.device)
-        condition_loss = torch.tensor(0.0, device=self.device)
+        condition_specific_loss = torch.tensor(0.0, device=self.device)
 
         for param in self.backbone.parameters():
             param.requires_grad = False
@@ -192,19 +205,19 @@ class FREST(pl.LightningModule):
             logits = torch.cat((l_neg_dense, max_pos_denses), dim=1) / 0.7
 
             labels = torch.ones(logits.size(0), dtype=torch.long, device=logits.device) 
-            condition_loss += self.contrastive_loss_weight * nn.functional.cross_entropy(logits, labels, reduction='mean')
+            condition_specific_loss += self.contrastive_loss_weight * nn.functional.cross_entropy(logits, labels, reduction='mean')
 
 
-            if condition_loss != 0:
-                self.manual_backward(condition_loss)
+            if condition_specific_loss != 0:
+                self.manual_backward(condition_specific_loss)
                 optimizer_projector.step()
 
 
             # update the queue
-        condition_loss = torch.tensor(0.0, device=self.device)
+        condition_specific_loss = torch.tensor(0.0, device=self.device)
         loss = torch.tensor(0.0, device=self.device)
-        seg_loss = torch.tensor(0.0, device=self.device)
-        entropy_val = torch.tensor(0.0, device=self.device)
+        self_training_loss_val = torch.tensor(0.0, device=self.device)
+        entropy_loss_val = torch.tensor(0.0, device=self.device)
 
         optimizer_strainer.zero_grad()
         for param in self.backbone.parameters():
@@ -226,8 +239,8 @@ class FREST(pl.LightningModule):
             if self.self_training_loss is not None:
                 self_training_loss = self.self_training_loss(logits_trg, pseudo_label_trg)
                 self_training_loss *= self.self_training_loss_weight
-                self.log("train_seg_losselftraining", self_training_loss)
-                seg_loss += self_training_loss
+                self.log("train_self_training_loss_valelftraining", self_training_loss)
+                self_training_loss_val += self_training_loss
 
         if self.contrastive_loss_out is not None:
             contrastive_inp = feats_trg
@@ -257,7 +270,7 @@ class FREST(pl.LightningModule):
             logits = torch.cat((l_neg_dense, max_pos_denses), dim=1) / 0.7
 
             labels = torch.ones(logits.size(0), dtype=torch.long, device=logits.device) 
-            condition_loss += self.contrastive_loss_weight * nn.functional.cross_entropy(logits, labels, reduction='mean')
+            condition_specific_loss += self.contrastive_loss_weight * nn.functional.cross_entropy(logits, labels, reduction='mean')
 
             
 
@@ -269,9 +282,9 @@ class FREST(pl.LightningModule):
                 self.contrastive_loss_out.update_queue(emb_neg)
 
         if self.use_seg == False:
-            seg_loss = 0
+            self_training_loss_val = 0
         
-        loss += condition_loss + seg_loss
+        loss += condition_specific_loss + self_training_loss_val
         if loss != 0:
             self.manual_backward(loss)
             optimizer_strainer.step()
@@ -280,10 +293,10 @@ class FREST(pl.LightningModule):
         if self.current_epoch > self.epoch_search:
 
 
-            condition_loss = torch.tensor(0.0, device=self.device)
+            condition_specific_loss = torch.tensor(0.0, device=self.device)
             loss = torch.tensor(0.0, device=self.device)
-            seg_loss = torch.tensor(0.0, device=self.device)
-            entropy_val = torch.tensor(0.0, device=self.device)
+            self_training_loss_val = torch.tensor(0.0, device=self.device)
+            entropy_loss_val = torch.tensor(0.0, device=self.device)
             discriminating_loss = torch.tensor(0.0, device=self.device)
             
             optimizer_seg.zero_grad()
@@ -325,15 +338,15 @@ class FREST(pl.LightningModule):
             if self.self_training_loss is not None:
                 self_training_loss = self.self_training_loss(logits_trg, pseudo_label_trg)
                 self_training_loss *= self.self_training_loss_weight
-                self.log("train_seg_losselftraining", self_training_loss)
-                seg_loss += self_training_loss
+                self.log("train_self_training_loss_valelftraining", self_training_loss)
+                self_training_loss_val += self_training_loss
 
             # ENTROPY MINIMIZATION
             if self.entropy_loss is not None:
                 entropy_loss = self.entropy_loss(logits_trg)
                 entropy_loss *= self.entropy_loss_weight
-                self.log("train_entropy_valntropy", entropy_loss)
-                entropy_val += entropy_loss
+                self.log("train_entropy_loss_valntropy", entropy_loss)
+                entropy_loss_val += entropy_loss
 
             
             discriminating_loss += self.discriminator_weight * disc_loss
@@ -351,7 +364,7 @@ class FREST(pl.LightningModule):
             
 
 
-            loss += seg_loss + entropy_val + restoration_loss + discriminating_loss
+            loss += self_training_loss_val + entropy_loss_val + restoration_loss + discriminating_loss
 
             
             self.manual_backward(loss)
