@@ -52,9 +52,10 @@ $DATA_DIR/
 - **Source model**: place the Cityscapes-pretrained SegFormer-B5 at
   `./pretrained_models/segformer.b5.1024x1024.city.160k.pth`
   (official SegFormer weights).
-- **Alignment**: training warps the reference images with UAWarpC; the
-  `megadepth` weights are fetched by `models/heads/uawarpc.py`. They are not
-  needed for evaluation.
+- **Alignment** (training only): place the UAWarpC MegaDepth weights at
+  `./pretrained_models/uawarpc_megadepth.ckpt`. Not needed for evaluation.
+
+See `pretrained_models/README.md` for download links of the two files above.
 
 ## Train
 
