@@ -51,9 +51,9 @@ $DATA_DIR/
 
 - **Source model**: place the Cityscapes-pretrained SegFormer-B5 at
   `./pretrained_models/segformer.b5.1024x1024.city.160k.pth`
-  (official SegFormer weights).
+  (official SegFormer weights). [download link](https://drive.google.com/file/d/1UlBXN5LLLKLsj51kq8DxHt5lzXw4x96k/view?usp=sharing)
 - **Alignment** (training only): place the UAWarpC MegaDepth weights at
-  `./pretrained_models/uawarpc_megadepth.ckpt`. Not needed for evaluation.
+  `./pretrained_models/uawarpc_megadepth.ckpt`. Not needed for evaluation. [download link](https://drive.google.com/file/d/1qMngnVPUroFOYpBvwlxNCWpjtr3bNBfD/view?usp=sharing)
 
 See `pretrained_models/README.md` for download links of the two files above.
 
@@ -69,11 +69,11 @@ DATA_DIR=/path/to/data bash scripts/train_acdc.sh
 DATA_DIR=/path/to/data bash scripts/eval_acdc.sh checkpoints/frest_acdc.ckpt
 ```
 
-## Pretrained checkpoint
+## FREST checkpoint
 
 Download the FREST checkpoint and place it at `checkpoints/frest_acdc.ckpt`:
 
-- **Checkpoint (Cityscapes → ACDC):** [download link](https://drive.google.com/file/d/1UlBXN5LLLKLsj51kq8DxHt5lzXw4x96k/view?usp=sharing)
+- **Checkpoint (Cityscapes → ACDC):** [download link](https://drive.google.com/file/d/16NDm5lNqGpg7kbkGYJ8eBGs57NK_luvx/view?usp=sharing)
 
 If you instead have a checkpoint from the original training code (legacy module
 names), convert its keys to this release's layout with:
